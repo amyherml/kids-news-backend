@@ -406,7 +406,7 @@ def health():
         "timestamp": datetime.now().isoformat()
     })
 
-@app.route('/api/refresh', methods=['POST'])
+@app.route('/api/refresh', methods=['GET','POST'])
 def refresh_news():
     """Manually trigger news refresh (for testing)"""
     try:

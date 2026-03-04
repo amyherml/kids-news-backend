@@ -4,10 +4,10 @@ from flask_cors import CORS
 import os
 from datetime import datetime, timedelta
 import json
-import openai
-import schedule
-import time
-import threading
+from openai import OpenAI
+#import schedule
+#import time
+#import threading
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -225,14 +225,10 @@ Generate EXACTLY 10 news stories.
     
     try:
         # Call OpenAI API
-        client = openai.OpenAI(
-    		api_key=os.environ.get('OPENAI_API_KEY'),
-    		# 如果不需要代理，不要设置 proxies 参数
-    		# 如果需要代理，应该这样设置：
-    		# http_client=httpx.Client(proxies="http://proxy-url:port")
-		)
+        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    		
         response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are a professional international news editor creating news for 10-year-old children."},
                 {"role": "user", "content": prompt}
@@ -273,16 +269,12 @@ def save_news_to_db():
         for key, value in news_items[0].items():
             print(f"  - {key}: {value}")
     
-    # Save to database
-    with app.app_context():
-        saved_count = 0
-        for item in news_items:
-            try:
-                # 从 item 中获取字段，同时支持 'headline' 和 'title'
-                title = item.get('headline') or item.get('title') or 'No title'
-                
+        # 只有在成功获取到新闻时才保存到数据库
+    if news_items and not news_items[0].get("isExample", False):
+        with app.app_context():
+            for item in news_items:
                 article = NewsArticle(
-                    title=title,
+                    title=item.get('headline', item.get('title', 'No title')),
                     category=item.get('category', 'General'),
                     whatIsHappening=item.get('whatIsHappening', ''),
                     whoIsInvolved=item.get('whoIsInvolved', ''),
@@ -295,37 +287,31 @@ def save_news_to_db():
                     funFact=item.get('funFact', ''),
                     isExample=item.get('isExample', False)
                 )
-                db.session.add(article)
-                saved_count += 1
-            except Exception as e:
-                print(f"❌ 保存单条新闻失败: {e}")
-                print(f"问题数据: {item}")
-        
+               
+	 if len(news_items) != 10:
+    	print("⚠️ Unexpected news count, skipping save")
+    	return
+
+	db.session.add(article)
+            
         db.session.commit()
-        example_count = sum(1 for item in news_items if item.get('isExample', False))
-        print(f"✅ Successfully saved {saved_count} news items to database ({example_count} examples)")
-        
-        # 如果保存成功，确认数据库中有数据
-        if saved_count > 0:
-            # 查询刚刚保存的数据
-            latest = NewsArticle.query.order_by(NewsArticle.generated_at.desc()).first()
-            if latest:
-                print(f"📊 最新保存的新闻标题: {latest.title}")
-                print(f"📊 isExample 值: {latest.isExample}")
+        print(f"✅ Successfully saved {len(news_items)} real news items to database")
+    else:
+        print("⚠️ No news generated today - database not updated")
 
 # ---------- Scheduled Task ----------
-def run_schedule():
-    """Run scheduled task in background"""
-    # Run at 1:00 AM every day
-    schedule.every().day.at("01:00").do(save_news_to_db)
+#def run_schedule():
+#    """Run scheduled task in background"""
+#    # Run at 1:00 AM every day
+#    schedule.every().day.at("01:00").do(save_news_to_db)
     
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+#    while True:
+#        schedule.run_pending()
+#        time.sleep(60)
 
 # Start scheduled task thread
-threading.Thread(target=run_schedule, daemon=True).start()
-print("⏰ Scheduled task started, will update news daily at 01:00")
+#threading.Thread(target=run_schedule, daemon=True).start()
+#print("⏰ Scheduled task started, will update news daily at 01:00")
 
 # ---------- API Routes ----------
 @app.route('/')

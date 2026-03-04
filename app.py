@@ -160,7 +160,9 @@ Return JSON:
     try:
         # Call OpenAI API
         client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    		
+
+        print("API KEY EXISTS:", bool(os.environ.get("OPENAI_API_KEY")))
+        	
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[

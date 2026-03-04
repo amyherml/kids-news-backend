@@ -131,7 +131,7 @@ def generate_news_with_chatgpt():
     prompt = """
 You are a professional international news editor writing world news summaries for 10-year-old readers.
 
-Generate the 10 most important global news stories today.
+Summarize the 10 most important global news stories today.
 
 Use reliable international sources such as BBC, NYT, CNN, Der Spiegel, Le Monde, Xinhua, Al Jazeera, FT, etc.
 
@@ -440,9 +440,13 @@ def health():
         "timestamp": datetime.now().isoformat()
     })
 
-@app.route('/api/refresh', methods=['GET','POST'])
+@app.route('/api/refresh', methods=['POST'])
 def refresh_news():
     """Manually trigger news refresh (for testing)"""
+
+    if request.headers.get("X-CRON-KEY") != os.environ.get("CRON_SECRET"):
+        return jsonify({"error": "unauthorized"}), 403
+
     try:
         save_news_to_db()
         return jsonify({"status": "success", "message": "News refreshed successfully"})

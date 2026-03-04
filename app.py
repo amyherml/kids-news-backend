@@ -251,10 +251,10 @@ Generate EXACTLY 10 news stories.
     except Exception as e:
         print(f"❌ ChatGPT API call failed: {e}")
         # Return example news with isExample flag
-        example_items = []
-        for item in EXAMPLE_NEWS:
-            example_items.append(item.copy())
-        return example_items
+       # example_items = []
+       # for item in EXAMPLE_NEWS:
+       #     example_items.append(item.copy())
+       # return example_items
 
 def save_news_to_db():
     """Generate news and save to database"""

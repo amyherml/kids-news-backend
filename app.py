@@ -269,7 +269,12 @@ def save_news_to_db():
         for key, value in news_items[0].items():
             print(f"  - {key}: {value}")
     
-        # 只有在成功获取到新闻时才保存到数据库
+    # 检查新闻数量是否为10条
+    if len(news_items) != 10:
+        print("⚠️ Unexpected news count, skipping save")
+        return
+    
+    # 只有在成功获取到新闻时才保存到数据库
     if news_items and not news_items[0].get("isExample", False):
         with app.app_context():
             for item in news_items:
@@ -287,15 +292,10 @@ def save_news_to_db():
                     funFact=item.get('funFact', ''),
                     isExample=item.get('isExample', False)
                 )
-               
-	 if len(news_items) != 10:
-    	print("⚠️ Unexpected news count, skipping save")
-    	return
-
-	db.session.add(article)
+                db.session.add(article)
             
-        db.session.commit()
-        print(f"✅ Successfully saved {len(news_items)} real news items to database")
+            db.session.commit()
+            print(f"✅ Successfully saved {len(news_items)} real news items to database")
     else:
         print("⚠️ No news generated today - database not updated")
 

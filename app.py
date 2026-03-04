@@ -169,12 +169,78 @@ Return JSON:
             ],
             temperature=0.7,
             max_tokens=1800,
-            response_format={"type": "json_object"}
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "news_response",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "news": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "headline": {"type": "string"},
+                                        "category": {"type": "string"},
+                                        "whatIsHappening": {"type": "string"},
+                                        "whoIsInvolved": {"type": "string"},
+                                        "whyImportant": {"type": "string"},
+                                        "viewpoints": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "viewpoint": {"type": "string"}
+                                                }
+                                            }
+                                        },
+                                        "impacts": {"type": "string"},
+                                        "imageGroup": {"type": "string"},
+                                        "storySource": {"type": "string"},
+                                        "viewpointSources": {
+                                            "type": "array",
+                                            "items": {"type": "string"}
+                                        },
+                                        "funFact": {"type": "string"}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         )
         
         # Parse JSON response
-        news_data = json.loads(response.choices[0].message.content)
-        news_items = news_data.get('news', [])
+        content = response.choices[0].message.content
+
+        try:
+            news_data = json.loads(content)
+        except json.JSONDecodeError:
+            print("⚠️ JSON parsing failed")
+            return []
+        
+        news_items = news_data.get("news", [])
+
+        valid_news = []
+
+        required_fields = [
+            "headline",
+            "category",
+            "whatIsHappening",
+            "whoIsInvolved",
+            "whyImportant",
+            "impacts",
+        ]
+
+        for item in news_items:
+
+            if all(field in item for field in required_fields):
+                item["isExample"] = False
+                valid_news.append(item)
+
+        return valid_news
         
         # Add isExample flag
         for item in news_items:
@@ -194,6 +260,16 @@ Return JSON:
 def save_news_to_db():
     """Generate news and save to database"""
     print(f"📅 [{datetime.now()}] Starting daily news generation...")
+
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    existing = NewsArticle.query.filter(
+        NewsArticle.generated_at >= today_start
+    ).first()
+
+    if existing:
+        print("⚠️ News already generated today — skipping")
+        return
     
     # Generate news
     news_items = generate_news_with_chatgpt()
@@ -205,32 +281,35 @@ def save_news_to_db():
             print(f"  - {key}: {value}")
     
         # 只有在成功获取到新闻时才保存到数据库
-    if news_items and len(news_items) == 10 and not news_items[0].get("isExample", False):
-        with app.app_context():
-            for item in news_items:
-                article = NewsArticle(
-                    title=item.get('headline', item.get('title', 'No title')),
-                    category=item.get('category', 'General'),
-                    whatIsHappening=item.get('whatIsHappening', ''),
-                    whoIsInvolved=item.get('whoIsInvolved', ''),
-                    whyImportant=item.get('whyImportant', ''),
-                    viewpoints=json.dumps(item.get('viewpoints', []), ensure_ascii=False),
-                    impacts=item.get('impacts', ''),
-                    imageGroup=item.get('imageGroup', ''),
-                    storySource=item.get('storySource', ''),
-                    viewpointSources=json.dumps(item.get('viewpointSources', []), ensure_ascii=False),
-                    funFact=item.get('funFact', ''),
-                    isExample=item.get('isExample', False)
-                )
-               
-	
+if news_items and len(news_items) == 10 and not news_items[0].get("isExample", False):
 
-                db.session.add(article)
-            
+    with app.app_context():
+
+        for item in news_items:
+
+            article = NewsArticle(
+                title=item.get('headline', item.get('title', 'No title')),
+                category=item.get('category', 'General'),
+                whatIsHappening=item.get('whatIsHappening', ''),
+                whoIsInvolved=item.get('whoIsInvolved', ''),
+                whyImportant=item.get('whyImportant', ''),
+                viewpoints=json.dumps(item.get('viewpoints', []), ensure_ascii=False),
+                impacts=item.get('impacts', ''),
+                imageGroup=item.get('imageGroup', ''),
+                storySource=item.get('storySource', ''),
+                viewpointSources=json.dumps(item.get('viewpointSources', []), ensure_ascii=False),
+                funFact=item.get('funFact', ''),
+                isExample=item.get('isExample', False)
+            )
+
+            db.session.add(article)
+
         db.session.commit()
-        print(f"✅ Successfully saved {len(news_items)} real news items to database")
-    else:
-        print("⚠️ No news generated today - database not updated")
+
+    print(f"✅ Successfully saved {len(news_items)} news items")
+
+else:
+    print("⚠️ No valid news generated — database not updated")
 
         #if len(news_items) != 10:
     	#print("⚠️ Unexpected news count, skipping save")

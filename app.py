@@ -161,8 +161,8 @@ Return JSON:
         # Call OpenAI API
         client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-        print("API KEY EXISTS:", bool(os.environ.get("OPENAI_API_KEY")))
-        	
+        #print("API KEY EXISTS:", bool(os.environ.get("OPENAI_API_KEY")))
+
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -265,13 +265,13 @@ def save_news_to_db():
 
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
-    #existing = NewsArticle.query.filter(
-    #    NewsArticle.generated_at >= today_start
-    #).first()
+    existing = NewsArticle.query.filter(
+        NewsArticle.generated_at >= today_start
+    ).first()
 
-    #if existing:
-    #    print("⚠️ News already generated today — skipping")
-    #    return
+    if existing:
+        print("⚠️ News already generated today — skipping")
+        return
     
     # Generate news
     news_items = generate_news_with_chatgpt()

@@ -17,7 +17,7 @@ app = Flask(__name__)
 CORS(app)  # Allow cross-origin requests
 
 # Configure OpenAI API Key
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+#openai.api_key = os.environ.get('OPENAI_API_KEY')
 
 # Configure database connection
 database_url = os.environ.get('DATABASE_URL')
@@ -225,7 +225,12 @@ Generate EXACTLY 10 news stories.
     
     try:
         # Call OpenAI API
-        client = openai.OpenAI(api_key=openai.api_key)
+        client = openai.OpenAI(
+    		api_key=os.environ.get('OPENAI_API_KEY'),
+    		# 如果不需要代理，不要设置 proxies 参数
+    		# 如果需要代理，应该这样设置：
+    		# http_client=httpx.Client(proxies="http://proxy-url:port")
+		)
         response = client.chat.completions.create(
             model="gpt-4-turbo-preview",
             messages=[

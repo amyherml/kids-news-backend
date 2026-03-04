@@ -129,98 +129,32 @@ def generate_news_with_chatgpt():
     """Call ChatGPT to generate daily news"""
     
     prompt = """
-You are a professional international news editor creating a daily world news briefing for 10-year-old readers.
+You are a professional international news editor writing world news summaries for 10-year-old readers.
 
-🎯 OBJECTIVE
+Generate the 10 most important global news stories today.
 
-Produce a "Top 10 Most Impactful World News Stories of Today" report that:
+Use reliable international sources such as BBC, NYT, CNN, Der Spiegel, Le Monde, Xinhua, Al Jazeera, FT, etc.
 
-- Focuses only on verified, current major global news
-- Uses only the approved media sources listed below
-- Includes clear explanations suitable for a 10-year-old
-- Presents different viewpoints fairly when they exist
-- Includes visual image groups
-- Clearly cites sources for each story and viewpoint
+Return JSON:
 
-📰 STORY SELECTION RULES
-
-- Select 10 most impactful global stories from today
-- Stories must be internationally significant
-- Must be reported by at least one approved major outlet
-- Must be fact-based and currently verifiable
-
-🌍 APPROVED NEWS SOURCES (ONLY USE THESE)
-
-🇬🇧 BBC – https://www.bbc.com
-🇺🇸 The New York Times – https://www.nytimes.com
-🇺🇸 CNN – https://www.cnn.com
-🇩🇪 Der Spiegel – https://www.spiegel.de
-🇫🇷 Le Monde – https://www.lemonde.fr
-🇨🇳 Xinhua – https://www.xinhuanet.com
-🇨🇳 People's Daily – http://en.people.cn
-🇷🇺 RT – https://www.rt.com
-🇷🇺 TASS – https://tass.com
-🇮🇳 NDTV – https://www.ndtv.com
-🇮🇳 The Times of India – https://timesofindia.indiatimes.com
-🇶🇦 Al Jazeera – https://www.aljazeera.com
-🇯🇵 NHK World – https://www3.nhk.or.jp/nhkworld/
-🇬🇧 FT – https://www.ft.com
-
-🧒 WRITING STYLE REQUIREMENTS
-
-For each story, use this EXACT structure:
-
-📰 [Headline Written for Kids]
-
-📌 What is happening?
-Explain clearly in simple language.
-
-👥 Who is involved?
-Name countries, leaders, groups.
-
-🌍 Why is this important?
-Explain global impact in simple terms.
-
-⚖️ Different viewpoints (if applicable):
-Viewpoint A: [description]
-Viewpoint B: [description]
-Clearly explain differences neutrally.
-
-🧠 How could this affect people?
-Explain impact on families, prices, safety, environment, etc.
-
-📚 Sources:
-Story source: [Outlet Name]
-Viewpoint source(s): [Outlet Name(s)]
-
-🖼️ Include a relevant image_group after each headline.
-
-If a story only has one clear viewpoint reported, say:
-"No major opposing viewpoint reported in approved sources today."
-
-Return the result in JSON format with the following structure:
 {
-    "news": [
-        {
-            "headline": "Headline for kids",
-            "category": "Category",
-            "whatIsHappening": "What is happening description",
-            "whoIsInvolved": "Who is involved",
-            "whyImportant": "Why it's important",
-            "viewpoints": [
-                {"viewpoint": "Viewpoint A description"},
-                {"viewpoint": "Viewpoint B description"}
-            ],
-            "impacts": "How this affects people",
-            "imageGroup": "Image group description",
-            "storySource": "Story source name",
-            "viewpointSources": ["Source 1", "Source 2"],
-            "funFact": "An interesting fun fact"
-        }
-    ]
+ "news":[
+  {
+   "headline":"",
+   "category":"",
+   "whatIsHappening":"",
+   "whoIsInvolved":"",
+   "whyImportant":"",
+   "viewpoints":[{"viewpoint":""}],
+   "impacts":"",
+   "imageGroup":"",
+   "storySource":"",
+   "viewpointSources":[],
+   "funFact":""
+  }
+ ]
 }
 
-Generate EXACTLY 10 news stories.
 """
     
     try:
@@ -234,7 +168,7 @@ Generate EXACTLY 10 news stories.
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=4000,
+            max_tokens=1800,
             response_format={"type": "json_object"}
         )
         
@@ -250,6 +184,7 @@ Generate EXACTLY 10 news stories.
         
     except Exception as e:
         print(f"❌ ChatGPT API call failed: {e}")
+        return []
         # Return example news with isExample flag
        # example_items = []
        # for item in EXAMPLE_NEWS:
@@ -269,13 +204,8 @@ def save_news_to_db():
         for key, value in news_items[0].items():
             print(f"  - {key}: {value}")
     
-    # 检查新闻数量是否为10条
-    if len(news_items) != 10:
-        print("⚠️ Unexpected news count, skipping save")
-        return
-    
-    # 只有在成功获取到新闻时才保存到数据库
-    if news_items and not news_items[0].get("isExample", False):
+        # 只有在成功获取到新闻时才保存到数据库
+    if news_items and len(news_items) == 10 and not news_items[0].get("isExample", False):
         with app.app_context():
             for item in news_items:
                 article = NewsArticle(
@@ -292,12 +222,19 @@ def save_news_to_db():
                     funFact=item.get('funFact', ''),
                     isExample=item.get('isExample', False)
                 )
+               
+	
+
                 db.session.add(article)
             
-            db.session.commit()
-            print(f"✅ Successfully saved {len(news_items)} real news items to database")
+        db.session.commit()
+        print(f"✅ Successfully saved {len(news_items)} real news items to database")
     else:
         print("⚠️ No news generated today - database not updated")
+
+        #if len(news_items) != 10:
+    	#print("⚠️ Unexpected news count, skipping save")
+    	#return
 
 # ---------- Scheduled Task ----------
 #def run_schedule():

@@ -280,54 +280,54 @@ def save_news_to_db():
         for key, value in news_items[0].items():
             print(f"  - {key}: {value}")
     
-        # 只有在成功获取到新闻时才保存到数据库
-if news_items and len(news_items) == 10 and not news_items[0].get("isExample", False):
+    # 只有在成功获取到新闻时才保存到数据库
+    if news_items and len(news_items) == 10 and not news_items[0].get("isExample", False):
 
-    with app.app_context():
+        with app.app_context():
 
-        for item in news_items:
+            for item in news_items:
 
-            article = NewsArticle(
-                title=item.get('headline', item.get('title', 'No title')),
-                category=item.get('category', 'General'),
-                whatIsHappening=item.get('whatIsHappening', ''),
-                whoIsInvolved=item.get('whoIsInvolved', ''),
-                whyImportant=item.get('whyImportant', ''),
-                viewpoints=json.dumps(item.get('viewpoints', []), ensure_ascii=False),
-                impacts=item.get('impacts', ''),
-                imageGroup=item.get('imageGroup', ''),
-                storySource=item.get('storySource', ''),
-                viewpointSources=json.dumps(item.get('viewpointSources', []), ensure_ascii=False),
-                funFact=item.get('funFact', ''),
-                isExample=item.get('isExample', False)
-            )
+                article = NewsArticle(
+                    title=item.get('headline', item.get('title', 'No title')),
+                    category=item.get('category', 'General'),
+                    whatIsHappening=item.get('whatIsHappening', ''),
+                    whoIsInvolved=item.get('whoIsInvolved', ''),
+                    whyImportant=item.get('whyImportant', ''),
+                    viewpoints=json.dumps(item.get('viewpoints', []), ensure_ascii=False),
+                    impacts=item.get('impacts', ''),
+                    imageGroup=item.get('imageGroup', ''),
+                    storySource=item.get('storySource', ''),
+                    viewpointSources=json.dumps(item.get('viewpointSources', []), ensure_ascii=False),
+                    funFact=item.get('funFact', ''),
+                    isExample=item.get('isExample', False)
+                )
 
-            db.session.add(article)
+                db.session.add(article)
 
-        db.session.commit()
+            db.session.commit()
 
-    print(f"✅ Successfully saved {len(news_items)} news items")
+        print(f"✅ Successfully saved {len(news_items)} news items")
 
-else:
-    print("⚠️ No valid news generated — database not updated")
+    else:
+        print("⚠️ No valid news generated — database not updated")
 
-        #if len(news_items) != 10:
-    	#print("⚠️ Unexpected news count, skipping save")
-    	#return
+            #if len(news_items) != 10:
+            #print("⚠️ Unexpected news count, skipping save")
+            #return
 
-# ---------- Scheduled Task ----------
-#def run_schedule():
-#    """Run scheduled task in background"""
-#    # Run at 1:00 AM every day
-#    schedule.every().day.at("01:00").do(save_news_to_db)
-    
-#    while True:
-#        schedule.run_pending()
-#        time.sleep(60)
+    # ---------- Scheduled Task ----------
+    #def run_schedule():
+    #    """Run scheduled task in background"""
+    #    # Run at 1:00 AM every day
+    #    schedule.every().day.at("01:00").do(save_news_to_db)
+        
+    #    while True:
+    #        schedule.run_pending()
+    #        time.sleep(60)
 
-# Start scheduled task thread
-#threading.Thread(target=run_schedule, daemon=True).start()
-#print("⏰ Scheduled task started, will update news daily at 01:00")
+    # Start scheduled task thread
+    #threading.Thread(target=run_schedule, daemon=True).start()
+    #print("⏰ Scheduled task started, will update news daily at 01:00")
 
 # ---------- API Routes ----------
 @app.route('/')

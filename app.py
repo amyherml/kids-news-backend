@@ -46,7 +46,7 @@ class NewsArticle(db.Model):
     viewpointSources = db.Column(db.Text)  # Stored as JSON string
     funFact = db.Column(db.Text)
     generated_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_example = db.Column(db.Boolean, default=False)  # Flag for example news
+    isExample = db.Column(db.Boolean, default=False)  # 确保这一行存在
     
     def to_dict(self):
         """Convert database object to dictionary"""
@@ -59,8 +59,10 @@ class NewsArticle(db.Model):
             'impacts': self.impacts,
             'imageGroup': self.imageGroup,
             'storySource': self.storySource,
+            'viewpointSources': json.loads(self.viewpointSources) if self.viewpointSources else [],
             'funFact': self.funFact,
-            'isExample': self.is_example
+            'isExample': self.isExample,
+            'generated_at': self.generated_at.isoformat() if self.generated_at else None
         }
         
         # Handle JSON fields that might be NULL
@@ -260,28 +262,51 @@ def save_news_to_db():
     # Generate news
     news_items = generate_news_with_chatgpt()
     
+    # 调试：打印第一条新闻的所有字段
+    if news_items and len(news_items) > 0:
+        print("🔥 第一条新闻的字段:")
+        for key, value in news_items[0].items():
+            print(f"  - {key}: {value}")
+    
     # Save to database
     with app.app_context():
+        saved_count = 0
         for item in news_items:
-            article = NewsArticle(
-                title=item.get('headline', item.get('title', 'No title')),
-                category=item.get('category', 'General'),
-                whatIsHappening=item.get('whatIsHappening', ''),
-                whoIsInvolved=item.get('whoIsInvolved', ''),
-                whyImportant=item.get('whyImportant', ''),
-                viewpoints=json.dumps(item.get('viewpoints', []), ensure_ascii=False),
-                impacts=item.get('impacts', ''),
-                imageGroup=item.get('imageGroup', ''),
-                storySource=item.get('storySource', ''),
-                viewpointSources=json.dumps(item.get('viewpointSources', []), ensure_ascii=False),
-                funFact=item.get('funFact', ''),
-                isExample=item.get('isExample', False)
-            )
-            db.session.add(article)
+            try:
+                # 从 item 中获取字段，同时支持 'headline' 和 'title'
+                title = item.get('headline') or item.get('title') or 'No title'
+                
+                article = NewsArticle(
+                    title=title,
+                    category=item.get('category', 'General'),
+                    whatIsHappening=item.get('whatIsHappening', ''),
+                    whoIsInvolved=item.get('whoIsInvolved', ''),
+                    whyImportant=item.get('whyImportant', ''),
+                    viewpoints=json.dumps(item.get('viewpoints', []), ensure_ascii=False),
+                    impacts=item.get('impacts', ''),
+                    imageGroup=item.get('imageGroup', ''),
+                    storySource=item.get('storySource', ''),
+                    viewpointSources=json.dumps(item.get('viewpointSources', []), ensure_ascii=False),
+                    funFact=item.get('funFact', ''),
+                    isExample=item.get('isExample', False)
+                )
+                db.session.add(article)
+                saved_count += 1
+            except Exception as e:
+                print(f"❌ 保存单条新闻失败: {e}")
+                print(f"问题数据: {item}")
         
         db.session.commit()
         example_count = sum(1 for item in news_items if item.get('isExample', False))
-        print(f"✅ Successfully saved {len(news_items)} news items to database ({example_count} examples)")
+        print(f"✅ Successfully saved {saved_count} news items to database ({example_count} examples)")
+        
+        # 如果保存成功，确认数据库中有数据
+        if saved_count > 0:
+            # 查询刚刚保存的数据
+            latest = NewsArticle.query.order_by(NewsArticle.generated_at.desc()).first()
+            if latest:
+                print(f"📊 最新保存的新闻标题: {latest.title}")
+                print(f"📊 isExample 值: {latest.isExample}")
 
 # ---------- Scheduled Task ----------
 def run_schedule():

@@ -57,7 +57,7 @@ class NewsArticle(db.Model):
             'whoIsInvolved': self.whoIsInvolved,
             'whyImportant': self.whyImportant,
             'impacts': self.impacts,
-            'imageGroup': self.imageGroup,
+            'imageGroup': json.loads(self.imageGroup) if self.imageGroup else [],
             'storySource': self.storySource,
             'viewpointSources': json.loads(self.viewpointSources) if self.viewpointSources else [],
             'funFact': self.funFact,
@@ -147,7 +147,7 @@ Return JSON:
    "whyImportant":"",
    "viewpoints":[{"viewpoint":""}],
    "impacts":"",
-   "imageGroup":"",
+   "imageGroup": ["https://...", "https://...", "https://..."],
    "storySource":"",
    "viewpointSources":[],
    "funFact":""
@@ -198,7 +198,11 @@ Return JSON:
                                             }
                                         },
                                         "impacts": {"type": "string"},
-                                        "imageGroup": {"type": "string"},
+                                        "imageGroup": {
+                                            "type": "array",
+                                            "items": {"type": "string"},
+                                            "maxItems": 3
+                                        }
                                         "storySource": {"type": "string"},
                                         "viewpointSources": {
                                             "type": "array",
@@ -239,6 +243,14 @@ Return JSON:
         for item in news_items:
 
             if all(field in item for field in required_fields):
+                # ⭐ 过滤 imageGroup URL
+                valid_images = []
+
+                for url in item.get("imageGroup", []):
+                    if isinstance(url, str) and url.startswith("http"):
+                        valid_images.append(url)
+
+                item["imageGroup"] = valid_images[:3]
                 item["isExample"] = False
                 valid_news.append(item)
 
@@ -297,7 +309,7 @@ def save_news_to_db():
                     whyImportant=item.get('whyImportant', ''),
                     viewpoints=json.dumps(item.get('viewpoints', []), ensure_ascii=False),
                     impacts=item.get('impacts', ''),
-                    imageGroup=item.get('imageGroup', ''),
+                    imageGroup=json.dumps(item.get('imageGroup', [])),
                     storySource=item.get('storySource', ''),
                     viewpointSources=json.dumps(item.get('viewpointSources', []), ensure_ascii=False),
                     funFact=item.get('funFact', ''),

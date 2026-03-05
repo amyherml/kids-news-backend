@@ -172,7 +172,7 @@ Return JSON:
             temperature=0.7,
             max_tokens=1800,
             response_format={
-                "type": "json_schema",
+                "type": "json_object",
                 "json_schema": {
                     "name": "news_response",
                     "schema": {
@@ -225,6 +225,7 @@ Return JSON:
             news_data = json.loads(content)
         except json.JSONDecodeError:
             print("⚠️ JSON parsing failed")
+            print("GPT RESPONSE:", content[:500])
             return []
         
         news_items = news_data.get("news", [])

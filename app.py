@@ -202,7 +202,7 @@ Return JSON:
                                             "type": "array",
                                             "items": {"type": "string"},
                                             "maxItems": 3
-                                        }
+                                        },
                                         "storySource": {"type": "string"},
                                         "viewpointSources": {
                                             "type": "array",
